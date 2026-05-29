@@ -1,323 +1,190 @@
-# Mini-CyBERT: Cybersecurity-Aware Language Model
+# Mini-CyBERT
 
-A lightweight, domain-adaptive transformer model for cybersecurity text processing using Hugging Face Transformers.
+A domain-adaptive BERT-based pipeline for **cybersecurity Named Entity Recognition (NER)** and **Masked Language Modeling (MLM)**, with a Flask API and React UI for interactive analysis.
 
----
-
-## Project Overview
-
-Mini-CyBERT is a compact language model specifically designed for cybersecurity applications. The model addresses the unique challenges of processing cybersecurity text by extending BERT's vocabulary with domain-specific terminology and fine-tuning using Masked Language Modeling (MLM) on cybersecurity corpora.
-
-**Key Features:**
-
-- Domain-specific vocabulary for cybersecurity terminology
-- Fine-tuned on National Vulnerability Database (NVD) data
-- Named Entity Recognition (NER) for cybersecurity entities
-- Web-based interface for real-time entity extraction
+**Repository:** [github.com/moodsyingers/Mini-CyBERT](https://github.com/moodsyingers/Mini-CyBERT)
 
 ---
 
-## Data Collection and Processing
+## Overview
 
-The project uses data from the National Vulnerability Database (NVD), the official U.S. government repository of vulnerability information.
+Mini-CyBERT extends BERT with cybersecurity vocabulary and uses a two-stage training recipe:
 
-### Data Collection
+1. **MLM adaptation** on NVD CVE descriptions (`datasets/cyber/corpus.txt`)
+2. **NER fine-tuning** on CyNER-style annotations mapped to **31 BIO labels** (15 entity families + `O`)
 
-**Script:** `scripts/01_mlm_data_collection.py`
-
-Collects CVE (Common Vulnerabilities and Exposures) data from NVD API.
-
-```bash
-python scripts/01_mlm_data_collection.py
-```
-
-**What it does:**
-
-- Fetches up to 10,000 recent CVE records from NVD
-- Extracts vulnerability descriptions
-- Saves to `datasets/nvd/nvd_cves.json`
-- Respects API rate limits (6 seconds between requests)
-
-**Data Source:** https://nvd.nist.gov/  
-**API Endpoint:** https://services.nvd.nist.gov/rest/json/cves/2.0
-
-### Data Cleaning
-
-**Script:** `scripts/02_mlm_data_cleaning.py`
-
-Processes the collected NVD data for model training.
-
-```bash
-python scripts/02_mlm_data_cleaning.py
-```
-
-**Processing steps:**
-
-1. Extracts descriptions from JSON records
-2. Filters invalid or empty entries
-3. Normalizes text formatting
-4. Removes duplicate descriptions
-5. Creates clean corpus file
-
-**Output:** `datasets/cyber/corpus.txt` - Clean text corpus for MLM training
+**Entity families:** APT, CAMPAIGN, EXPLOIT, FILE, HASH, INDICATOR, INFRASTRUCTURE, IP, MALWARE, METHOD, SOFTWARE, THREAT_ACTOR, TOOL, URL, VULNERABILITY
 
 ---
 
-## Model Architecture
+## Results (NER)
 
-**Base Model:** BERT (Bidirectional Encoder Representations from Transformers)
+Re-evaluated with confusion matrices and **Matthews Correlation Coefficient (MCC)** for imbalanced token classification. See [`final-edits/SUMMARY_FOR_ADVISOR.md`](final-edits/SUMMARY_FOR_ADVISOR.md) for interpretation.
 
-**Adaptations:**
+| Metric | Validation | Test |
+|--------|------------|------|
+| Entity F1 | 0.708 | 0.701 |
+| Macro-F1 | 0.682 | 0.677 |
+| Token accuracy | 0.954 | 0.952 |
+| **MCC (entity detection)** | **0.774** | **0.776** |
 
-1. Vocabulary extension with cybersecurity-specific terms
-2. MLM fine-tuning on cybersecurity corpus
-3. NER fine-tuning for entity extraction
+Token accuracy is high because most tokens are label `O`; MCC uses TP, TN, FP, and FN and remains informative under class imbalance.
 
-**Recognized Entity Types:**
-
-- Malware
-- Vulnerabilities (CVE IDs)
-- Software/Systems
-- Organizations/Threat Actors
-- Indicators of Compromise (IOCs)
-- Attack Patterns
+Full tables: [`final-edits/results/main_results_with_mcc.csv`](final-edits/results/main_results_with_mcc.csv)
 
 ---
 
-## Installation and Setup
+## Quick start
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Node.js and npm
-- pip package manager
+- Python 3.8+
+- Node.js 18+ and npm
 
-### Backend Setup
-
-1. Navigate to backend directory:
+### 1. Clone and install
 
 ```bash
-cd backend
-```
+git clone https://github.com/moodsyingers/Mini-CyBERT.git
+cd Mini-CyBERT
 
-2. Install Python dependencies:
-
-```bash
 pip install -r requirements.txt
+pip install seqeval datasets evaluate
+
+cd frontend && npm install && cd ..
 ```
 
-Required packages:
+### 2. Model weights (required)
 
-- Flask (API server)
-- Flask-CORS (cross-origin requests)
-- transformers (Hugging Face)
-- torch (PyTorch)
+Model checkpoints are **not** included in this repository (file size). Download trained weights and place them locally:
 
-### Frontend Setup
+```
+models/
+├── mlm_final/              # MLM checkpoint
+└── mini_cybert_final/      # NER checkpoint
+```
 
-1. Navigate to frontend directory:
+Train your own with [`model_training_sheiley.ipynb`](model_training_sheiley.ipynb), or add a download link here once weights are hosted (Google Drive, Hugging Face, etc.).
+
+### 3. NER data
+
+Obtain the [CyNER dataset](https://huggingface.co/datasets/CynerAI/CyNER), save as `datasets/cyber/cyberner.csv`, then run:
 
 ```bash
-cd frontend
+python scripts/clean_cyberner_dataset.py
 ```
 
-2. Install Node.js dependencies:
+Output: `datasets/cyber/cyberner_clean.csv`
 
-```bash
-npm install
-```
+### 4. Run the application
 
----
-
-## Running the Application
-
-### Start Backend Server
-
-From the project root directory:
+**Backend** (from project root):
 
 ```bash
 python backend/ner_api.py
 ```
 
-The backend will:
+API: http://localhost:5001
 
-- Load the Mini-CyBERT NER model
-- Load the MLM model
-- Start Flask server on http://localhost:5001
-
-Wait for both models to load (approximately 20-30 seconds).
-
-### Start Frontend Interface
-
-In a new terminal, from the project root:
+**Frontend** (new terminal):
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Access the application at: http://localhost:5173
+UI: http://localhost:5173
+
+For detailed setup, see [`SETUP_GUIDE.md`](SETUP_GUIDE.md).
 
 ---
 
-## Using the Application
+## Evaluation
 
-### NER Model (Named Entity Recognition)
+**Standard NER evaluation:**
 
-1. Select "NER Model" in the interface
-2. Enter cybersecurity text (e.g., vulnerability descriptions, threat reports)
-3. Click "Analyze Text"
-4. View extracted entities with their classifications
-
-**Example Input:**
-
-```
-APT28 exploited CVE-2023-12345 in a phishing campaign targeting Windows systems.
+```bash
+python scripts/evaluate_ner.py
 ```
 
-**Example Output:**
+**MCC re-evaluation** (confusion matrices + paper tables):
 
-- APT28: THREAT_ACTOR
-- CVE-2023-12345: VULNERABILITY
-- phishing: ATTACK_VECTOR
-- Windows: SOFTWARE
-
-### MLM Model (Masked Language Modeling)
-
-1. Select "MLM Model" in the interface
-2. Enter text with [MASK] token where you want predictions
-3. Click "Analyze Text"
-4. View top 5 word predictions
-
-**Example Input:**
-
-```
-The attacker used a [MASK] exploit to gain access.
+```bash
+python final-edits/evaluate_with_mcc.py
 ```
 
-**Example Output:**
-
-1. zero-day
-2. remote
-3. buffer
-4. privilege
-5. sql
+Outputs are written to `final-edits/results/` (JSON, CSV, LaTeX snippets, confusion matrices).
 
 ---
 
-## Project Structure
+## Training
 
-```
-mini-cybert/
-|
-|-- backend/
-|   |-- ner_api.py              # Flask API server
-|   |-- requirements.txt         # Python dependencies
-|
-|-- frontend/
-|   |-- src/
-|   |   |-- App.jsx             # React application
-|   |   |-- App.css             # Styling
-|   |-- package.json            # Node.js dependencies
-|
-|-- scripts/
-|   |-- 01_mlm_data_collection.py   # NVD data collection
-|   |-- 02_mlm_data_cleaning.py     # Data preprocessing
-|   |-- run_ner.py                  # NER inference script
-|
-|-- datasets/
-|   |-- nvd/                    # Raw NVD data
-|   |   |-- nvd_cves.json
-|   |-- cyber/                  # Processed data
-|       |-- corpus.txt          # MLM training corpus
-|       |-- cyberner.csv        # NER training data
-|
-|-- models/
-|   |-- mini_cybert_weights/
-|       |-- mlm_final/          # MLM model weights
-|       |-- mini_cybert_final/  # NER model weights
-|
-|-- README.md                   # This file
-|-- SETUP_GUIDE.txt             # Detailed setup instructions
+End-to-end training is documented in [`model_training_sheiley.ipynb`](model_training_sheiley.ipynb):
+
+1. Vocabulary extension (TF-IDF cyber terms)
+2. MLM on NVD corpus (3 epochs)
+3. NER fine-tuning (10 epochs, 31-label head)
+
+**MLM data pipeline:**
+
+```bash
+python scripts/mlm_data_collection.py
+python scripts/mlm_data_cleaning.py
 ```
 
 ---
 
-## Model Training
-
-The Mini-CyBERT model was trained using the following process:
-
-1. **Data Collection:** 10,000 CVE descriptions from NVD
-2. **Vocabulary Extension:** Domain-specific terms added using TF-IDF
-3. **MLM Pre-training:** Masked language modeling on cybersecurity corpus
-4. **NER Fine-tuning:** Entity recognition on labeled cybersecurity entities
-
-Training data sources:
-
-- National Vulnerability Database (NVD)
-- CyNER Dataset (Hugging Face)
-
----
-
-## API Endpoints
-
-### NER Endpoint
+## Project structure
 
 ```
-POST http://localhost:5001/api/ner/analyze
-Content-Type: application/json
-
-{
-  "text": "your cybersecurity text here"
-}
-```
-
-### MLM Endpoint
-
-```
-POST http://localhost:5001/api/mlm/predict
-Content-Type: application/json
-
-{
-  "text": "text with [MASK] token"
-}
-```
-
-### Health Check
-
-```
-GET http://localhost:5001/api/health
+Mini-CyBERT/
+├── backend/                 # Flask inference API
+├── frontend/                # React UI (NER + MLM)
+├── scripts/                 # Data prep, training helpers, evaluation
+├── config/                  # 31-label NER schema
+├── datasets/cyber/          # Corpus, labels, vocabulary
+├── final-edits/             # MCC evaluation + updated result tables
+├── paper/                   # LaTeX manuscript
+├── model_training_sheiley.ipynb
+├── README.md
+└── SETUP_GUIDE.md
 ```
 
 ---
 
-## Evaluation and Performance
+## API
 
-The model has been evaluated on cybersecurity NER tasks and shows improved performance over generic BERT models for:
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/health` | Health check |
+| `POST` | `/api/ner/analyze` | NER — JSON body `{ "text": "..." }` |
+| `POST` | `/api/mlm/predict` | Fill-mask — text with `[MASK]` token |
 
-- Vulnerability identification
-- Threat actor recognition
-- Attack pattern classification
-- Indicator of Compromise (IOC) extraction
+---
+
+## Paper
+
+LaTeX source: [`paper/mini_cybert_paper.tex`](paper/mini_cybert_paper.tex)
+
+MCC table updates for the manuscript: [`final-edits/results/paper_table_updates.tex`](final-edits/results/paper_table_updates.tex)
+
+---
+
+## Authors
+
+**Sheiley Patel** — Department of Computer Science, California State University, Sacramento  
+**Bonaventure Chidube Molokwu** — Department of Computer Science, California State University, Sacramento
 
 ---
 
 ## References
 
-1. Ranade, P., Piplai, A., Joshi, A., & Finin, T. (2021). CyBERT: Contextualized Embeddings for the Cybersecurity Domain. IEEE Big Data.
-2. Devlin, J., et al. (2018). BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
-3. National Vulnerability Database (NVD). National Institute of Standards and Technology. https://nvd.nist.gov/
+1. Devlin et al., *BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding*, NAACL 2019
+2. Ranade et al., *CyBERT: Contextualized Embeddings for the Cybersecurity Domain*, IEEE Big Data 2021
+3. Lal et al., [CyNER benchmark](https://huggingface.co/datasets/CynerAI/CyNER), 2022
+4. [National Vulnerability Database (NVD)](https://nvd.nist.gov/)
 
 ---
 
 ## License
 
-This project is developed for academic research purposes.
-
-## Contact
-
-For questions or issues, please refer to the project documentation or contact the development team.
-
----
-
-**Developed as part of Mini-CyBERT: Building a Lightweight Cybersecurity-Aware Language Model**
+Developed for academic research. See repository license for terms.
