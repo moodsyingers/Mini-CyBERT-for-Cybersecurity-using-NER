@@ -63,7 +63,7 @@ models/
 └── mini_cybert_final/      # NER checkpoint
 ```
 
-Train your own using `model_training_sheiley.ipynb`, or host weights separately (Google Drive, Hugging Face, etc.) and document the download steps here.
+Train your own using `model_training_sheiley.ipynb` (open locally in Jupyter or Google Colab after cloning—do not rely on GitHub’s notebook preview). Host weights separately (Google Drive, Hugging Face, etc.) and document the download steps here.
 
 ### 3. NER data
 
@@ -124,7 +124,7 @@ End-to-end training steps:
 2. MLM on NVD corpus (3 epochs)
 3. NER fine-tuning (10 epochs, 31-label head)
 
-Open `model_training_sheiley.ipynb` in Jupyter or Google Colab to run the full pipeline.
+Clone the repo, then open `model_training_sheiley.ipynb` in Jupyter or Google Colab to run the full pipeline.
 
 **MLM data pipeline:**
 
