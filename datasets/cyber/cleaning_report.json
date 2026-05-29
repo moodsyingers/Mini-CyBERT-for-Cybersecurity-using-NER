@@ -1,8 +1,8 @@
 {
-  "input_file": "E:\\project\\shiley-project\\datasets/nvd/nvd_cves.json",
+  "input_file": "C:\\Users\\spatel19\\Desktop\\CYBERT\\datasets/nvd/nvd_cves.json",
   "total_loaded": 10000,
   "valid_descriptions": 9999,
   "unique_descriptions": 9989,
   "duplicates_removed": 10,
-  "output_file": "E:\\project\\shiley-project\\datasets/cyber\\corpus.txt"
+  "output_file": "C:\\Users\\spatel19\\Desktop\\CYBERT\\datasets/cyber\\corpus.txt"
 }
