@@ -39,6 +39,9 @@ python final-edits/evaluate_with_mcc.py \
 | `paper_table_updates.tex` | LaTeX snippets to paste into `paper/mini_cybert_paper.tex` |
 | `confusion_matrix_validation_31class.csv` | Full 31×31 token confusion matrix (validation) |
 | `confusion_matrix_test_31class.csv` | Full 31×31 token confusion matrix (test) |
+| `table8_classwise_with_mcc.csv` | Paper Table 8 (class-wise test NER) with **MCC** column |
+| `table9_epoch_with_mcc.csv` | Paper Table 9 (validation by epoch) with **MCC** column |
+| `paper_tables_8_9_with_mcc.tex` | LaTeX for Tables 8 and 9 with MCC |
 
 ## Methodology (matches training notebook)
 

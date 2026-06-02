@@ -485,12 +485,20 @@ def main() -> int:
     save_main_results_table(all_results, args.results_dir / "main_results_with_mcc.csv")
     save_latex_snippets(all_results, args.results_dir / "paper_table_updates.tex")
 
+    from generate_tables_8_9_mcc import main as generate_tables_8_9
+
+    if generate_tables_8_9() != 0:
+        print("Warning: could not regenerate Tables 8/9 with MCC.", file=sys.stderr)
+
     print(f"\nSaved results to {args.results_dir}")
     print(f"  - {json_path.name}")
     print("  - main_results_with_mcc.csv")
     print("  - paper_table_updates.tex")
     print("  - confusion_matrix_validation_31class.csv")
     print("  - confusion_matrix_test_31class.csv")
+    print("  - table8_classwise_with_mcc.csv")
+    print("  - table9_epoch_with_mcc.csv")
+    print("  - paper_tables_8_9_with_mcc.tex")
     return 0
 
 
