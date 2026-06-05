@@ -47,8 +47,9 @@ dist/
 dist-ssr/
 *.local
 
-# Models and Datasets (Large files)
-models/
+# Models (large checkpoints — see models/README.md for setup)
+models/*
+!models/README.md
 models_1/
 
 

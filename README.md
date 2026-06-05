@@ -55,7 +55,10 @@ cd frontend && npm install && cd ..
 
 ### 2. Model weights (required)
 
-Model checkpoints are **not** included in this repository (file size). Download trained weights and place them locally:
+Model checkpoints (~850MB total) are **not** in Git. After cloning, either:
+
+- **Train** with `model_training_sheiley.ipynb` (foundation: `bert-base-uncased`), or  
+- **Copy** existing checkpoints into:
 
 ```
 models/
@@ -63,17 +66,15 @@ models/
 └── mini_cybert_final/      # NER checkpoint
 ```
 
-Train your own using `model_training_sheiley.ipynb` (open locally in Jupyter or Google Colab after cloning—do not rely on GitHub’s notebook preview). Host weights separately (Google Drive, Hugging Face, etc.) and document the download steps here.
+See `models/README.md` for details.
 
-### 3. NER data
-
-Obtain the CyNER dataset (see reference [6]), save as `datasets/cyber/cyberner.csv`, then run:
+### 3. Verify setup
 
 ```bash
-python scripts/clean_cyberner_dataset.py
+python scripts/verify_setup.py
 ```
 
-Output: `datasets/cyber/cyberner_clean.csv`
+This checks Python packages, `datasets/cyber/cyberner_clean.csv` (included in the repo), and model folders.
 
 ### 4. Run the application
 
@@ -159,6 +160,8 @@ Mini-CyBERT/
 | `GET` | `/api/health` | Health check |
 | `POST` | `/api/ner/analyze` | NER — JSON body `{ "text": "..." }` |
 | `POST` | `/api/mlm/predict` | Fill-mask — text with `[MASK]` token |
+
+**Note:** Cloning alone does not run the demo until model checkpoints exist under `models/`. The cleaned CyNER export (`cyberner_clean.csv`) is included in this repository.
 
 ---
 

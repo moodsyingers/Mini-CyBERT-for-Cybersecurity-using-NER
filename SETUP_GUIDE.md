@@ -45,7 +45,7 @@ The project uses vulnerability data from the National Vulnerability Database.
 From the project root directory:
 
 ```bash
-python scripts/01_mlm_data_collection.py
+python scripts/mlm_data_collection.py
 ```
 
 **This will:**
@@ -59,7 +59,7 @@ python scripts/01_mlm_data_collection.py
 After collection completes:
 
 ```bash
-python scripts/02_mlm_data_cleaning.py
+python scripts/mlm_data_cleaning.py
 ```
 
 **This will:**
@@ -85,35 +85,32 @@ The backend provides API endpoints for the NER and MLM models.
 
 ### Step 1: Install Python Dependencies
 
-Navigate to backend directory:
-
-```bash
-cd backend
-```
-
-Install required packages:
+From the **project root** (not only `backend/`):
 
 ```bash
 pip install -r requirements.txt
+pip install -r backend/requirements.txt
+pip install seqeval datasets evaluate
 ```
 
-**Required packages:**
-
-- Flask
-- Flask-CORS
-- transformers
-- torch
+**Required packages include:** Flask, Flask-CORS, PyTorch, transformers, pandas, numpy.
 
 ### Step 2: Verify Model Files
 
 Ensure model weights exist in:
 
 ```
-models/mini_cybert_weights/mlm_final/
-models/mini_cybert_weights/mini_cybert_final/
+models/mlm_final/
+models/mini_cybert_final/
 ```
 
-If models are missing, they need to be trained first.
+These folders are **not** in Git (file size). Either train them with `model_training_sheiley.ipynb` or copy checkpoints from a trained environment. See `models/README.md`.
+
+Verify setup:
+
+```bash
+python scripts/verify_setup.py
+```
 
 ---
 
@@ -158,9 +155,9 @@ python backend/ner_api.py
 **Expected output:**
 
 ```
-Loading NER model from: models/mini_cybert_weights/mini_cybert_final
+Loading NER model from: models/mini_cybert_final
 NER model loaded successfully!
-Loading MLM model from: models/mini_cybert_weights/mlm_final
+Loading MLM model from: models/mlm_final
 MLM model loaded successfully!
 Starting Flask server on http://localhost:5001
 ```
@@ -225,7 +222,7 @@ Windows -> SOFTWARE
 **Steps:**
 
 1. Select "MLM Model" radio button
-2. Enter text with `<mask>` token (RoBERTa model)
+2. Enter text with `[MASK]` token (BERT fill-mask)
 3. Click "Analyze Text" button
 4. View top 5 word predictions
 
@@ -234,7 +231,7 @@ Windows -> SOFTWARE
 **Input:**
 
 ```
-The attacker used a <mask> exploit
+The attacker used a [MASK] exploit
 ```
 
 **Output:**
@@ -306,13 +303,18 @@ The attacker used a <mask> exploit
 ## Quick Start Summary
 
 ```bash
-# 1. Collect data
-python scripts/01_mlm_data_collection.py
-python scripts/02_mlm_data_cleaning.py
-
-# 2. Install dependencies
-cd backend && pip install -r requirements.txt && cd ..
+# 1. Install dependencies (from project root)
+pip install -r requirements.txt
+pip install -r backend/requirements.txt
+pip install seqeval datasets evaluate
 cd frontend && npm install && cd ..
+
+# 2. Verify data + model checkpoints
+python scripts/verify_setup.py
+
+# Optional: rebuild NVD corpus
+python scripts/mlm_data_collection.py
+python scripts/mlm_data_cleaning.py
 
 # 3. Start backend
 python backend/ner_api.py
