@@ -38,10 +38,9 @@ npm --version
 
 The demo needs the fine-tuned SecBERT NER model at `models/secbert_ner_final/`.
 
-1. Open `train_secbert_ner.ipynb` in Google Colab (GPU runtime).
-2. Upload `datasets/cyber/cyberner_clean.csv` and `config/ner_cyber_labels.json` when prompted.
-3. Run all cells. The notebook fine-tunes `jackaduma/SecBERT` for token classification (the base model was already MLM pre-trained on cybersecurity corpora by its original authors — no MLM training happens here) and evaluates it on the held-out test set.
-4. Download `secbert_ner_final.zip` from the final cell and extract it so that the files land at:
+1. Copy `datasets/cyber/cyberner_clean.csv` and `config/ner_cyber_labels.json` to your Google Drive (top level, or adjust `DRIVE_DIR` in the notebook).
+2. Open `train_secbert_ner.ipynb` in Google Colab (GPU runtime) and run all cells. The notebook fine-tunes `jackaduma/SecBERT` for token classification (the base model was already MLM pre-trained on cybersecurity corpora by its original authors — no MLM training happens here) and evaluates it on the held-out test set.
+3. The trained model is saved to your Drive as `secbert_ner_final.zip`. Download and extract it so that the files land at:
 
 ```
 models/secbert_ner_final/
