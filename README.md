@@ -157,7 +157,6 @@ shiley-project/
 |-- scripts/
 |   |-- evaluate_ner.py             # Entity-level evaluation (seqeval P/R/F1)
 |   |-- run_ner.py                  # Interactive NER inference CLI
-|   |-- clean_cyberner_dataset.py   # Dataset cleaning
 |   |-- build_dataset_vocabulary.py # Builds entity_vocabulary.json
 |
 |-- config/
