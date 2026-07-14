@@ -1,9 +1,9 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background: #0e1116;
+  background: #f7f8fa;
 }

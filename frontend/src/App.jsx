@@ -4,8 +4,8 @@ import Header from './components/Header';
 
 const API_URL = 'http://localhost:5001';
 
-// Color encodes the semantic family (8 validated hues); the visible label
-// always carries the exact entity type, so identity never relies on color alone.
+// Color encodes the semantic family (validated 8-hue palette); the visible
+// label always carries the exact entity type, never color alone.
 const ENTITY_FAMILIES = {
   APT: 'actor',
   THREAT_ACTOR: 'actor',
@@ -25,21 +25,24 @@ const ENTITY_FAMILIES = {
 };
 
 const FAMILY_COLORS = {
-  actor: '#9085e9',
-  malware: '#e66767',
-  weakness: '#d95926',
-  technique: '#d55181',
-  tool: '#3987e5',
-  system: '#c98500',
-  artifact: '#199e70',
+  tool: '#2a78d6',
+  weakness: '#d1541e',
+  artifact: '#12876f',
+  malware: '#e34948',
+  system: '#b57900',
+  actor: '#4a3aa7',
   network: '#008300',
-  other: '#8b93a1',
+  technique: '#c2417c',
+  other: '#64748b',
 };
 
 const EXAMPLE_TEXTS = [
   'APT28, also known as Fancy Bear, used phishing to exploit CVE-2023-12345.',
   'The ransomware Conti targeted healthcare using Microsoft Exchange vulnerabilities.',
   'Attackers exploited CVE-2021-44228 (Log4Shell) to gain network access.',
+  'Lazarus Group deployed the Manuscrypt malware through spear-phishing emails.',
+  'The attacker used Cobalt Strike and Mimikatz for lateral movement across the domain.',
+  'Emotet spread via malicious Word documents and downloaded TrickBot onto infected hosts.',
 ];
 
 const entityColor = (type) => FAMILY_COLORS[ENTITY_FAMILIES[type] || 'other'];
@@ -101,7 +104,7 @@ function AnnotatedText({ text, entities }) {
       <mark
         key={`e${i}`}
         className="entity-span"
-        style={{ backgroundColor: tint(color, 0.16), borderColor: tint(color, 0.45) }}
+        style={{ backgroundColor: tint(color, 0.09), borderColor: tint(color, 0.4) }}
       >
         {text.slice(e.start, e.end)}
         <span className="entity-tag" style={{ color }}>{e.entity_type}</span>
@@ -161,14 +164,15 @@ function App() {
       <Header />
 
       <main className="container">
-        <section className="card input-card">
-          <div className="card-heading">
-            <h1>Analyze cybersecurity text</h1>
-            <p className="card-caption">
-              Entities are extracted by SecBERT fine-tuned for token classification on the CyberNER dataset.
-            </p>
-          </div>
+        <div className="page-title">
+          <h1>Cybersecurity Named Entity Recognition</h1>
+          <p>
+            Extract threat actors, malware, vulnerabilities, tools, and indicators from security
+            text using SecBERT fine-tuned on the CyberNER dataset.
+          </p>
+        </div>
 
+        <section className="card">
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
@@ -179,63 +183,56 @@ function App() {
           />
 
           <div className="input-actions">
-            <div className="examples">
-              <span className="examples-label">Try:</span>
-              {EXAMPLE_TEXTS.map((example, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="example-chip"
-                  onClick={() => setInputText(example)}
-                  title={example}
-                >
-                  {example.length > 44 ? `${example.slice(0, 44)}…` : example}
-                </button>
-              ))}
-            </div>
-
+            <span className="input-hint">Ctrl + Enter to analyze</span>
             <button className="analyze-btn" onClick={handleAnalyze} disabled={loading}>
               {loading && <span className="spinner" aria-hidden="true" />}
-              {loading ? 'Analyzing' : 'Analyze'}
+              {loading ? 'Analyzing…' : 'Analyze text'}
             </button>
           </div>
 
           {error && (
             <div className="error-banner" role="alert">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
               {error}
             </div>
           )}
         </section>
 
+        <section className="examples-section">
+          <h2 className="section-label">Try an example</h2>
+          <div className="examples-grid">
+            {EXAMPLE_TEXTS.map((example, i) => (
+              <button
+                key={i}
+                type="button"
+                className="example-card"
+                onClick={() => setInputText(example)}
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {result && (
-          <>
-            <section className="stat-row">
-              <div className="stat-tile">
-                <span className="stat-value">{totalEntities}</span>
-                <span className="stat-label">Entities detected</span>
+          <section className="card results-card">
+            <div className="results-header">
+              <h2>Results</h2>
+              <div className="results-stats">
+                <span><strong>{totalEntities}</strong> entities</span>
+                <span className="stat-divider" aria-hidden="true" />
+                <span><strong>{groups.length}</strong> types</span>
+                <span className="stat-divider" aria-hidden="true" />
+                <span><strong>{(result.sentences || []).length}</strong> sentences</span>
               </div>
-              <div className="stat-tile">
-                <span className="stat-value">{groups.length}</span>
-                <span className="stat-label">Entity types</span>
-              </div>
-              <div className="stat-tile">
-                <span className="stat-value">{(result.sentences || []).length}</span>
-                <span className="stat-label">Sentences</span>
-              </div>
-            </section>
+            </div>
 
-            <section className="card">
-              <h2 className="section-title">Annotated text</h2>
+            <div className="results-block">
+              <h3 className="section-label">Annotated text</h3>
               <AnnotatedText text={result.text} entities={result.entities || []} />
-            </section>
+            </div>
 
-            <section className="card">
-              <h2 className="section-title">Entity summary</h2>
+            <div className="results-block">
+              <h3 className="section-label">Entities by type</h3>
               {groups.length > 0 ? (
                 <div className="summary-list">
                   {groups.map((g) => (
@@ -250,7 +247,7 @@ function App() {
                           <span
                             className="word-chip"
                             key={w.word}
-                            style={{ borderColor: tint(g.color, 0.4), backgroundColor: tint(g.color, 0.1) }}
+                            style={{ borderColor: tint(g.color, 0.35), backgroundColor: tint(g.color, 0.06) }}
                           >
                             {w.word}
                             {w.count > 1 && <span className="word-count">×{w.count}</span>}
@@ -263,13 +260,13 @@ function App() {
               ) : (
                 <p className="empty-note">No cybersecurity entities were detected in this text.</p>
               )}
-            </section>
-          </>
+            </div>
+          </section>
         )}
       </main>
 
       <footer className="site-footer">
-        SecBERT fine-tuned for cybersecurity NER · CyberNER dataset · Flask + React demo
+        SecBERT fine-tuned for cybersecurity NER · CyberNER dataset
       </footer>
     </div>
   );
