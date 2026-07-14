@@ -1,86 +1,68 @@
-# Mini-CyBERT: Cybersecurity-Aware Language Model
+# SecBERT Cybersecurity NER
 
-A lightweight, domain-adaptive transformer model for cybersecurity text processing using Hugging Face Transformers.
+Fine-tuning **SecBERT** for Cybersecurity Named Entity Recognition (NER) using Hugging Face Transformers, with a Flask + React demo application.
 
 ---
 
 ## Project Overview
 
-Mini-CyBERT is a compact language model specifically designed for cybersecurity applications. The model addresses the unique challenges of processing cybersecurity text by extending BERT's vocabulary with domain-specific terminology and fine-tuning using Masked Language Modeling (MLM) on cybersecurity corpora.
+This project fine-tunes [`jackaduma/SecBERT`](https://huggingface.co/jackaduma/SecBERT) — a BERT model that was **already pre-trained with Masked Language Modeling (MLM) on cybersecurity corpora by its original authors** (APTnotes, Stucco-Data, CASIE, SemEval-2018 Task 8) — for the cybersecurity NER task.
 
-**Key Features:**
+**We do not perform any MLM or domain-adaptive pre-training ourselves.** Our contribution is:
 
-- Domain-specific vocabulary for cybersecurity terminology
-- Fine-tuned on National Vulnerability Database (NVD) data
-- Named Entity Recognition (NER) for cybersecurity entities
-- Web-based interface for real-time entity extraction
+1. **Fine-tuning** SecBERT for token classification (NER) on the CyberNER dataset with a 31-label BIO schema (15 cyber entity types).
+2. **Evaluating** the fine-tuned model with standard entity-level NER metrics (Precision, Recall, F1 via seqeval).
+3. **Serving** the model in a web demo (Flask API + React frontend).
+
+### Methodology
+
+```
+jackaduma/SecBERT  (pre-trained with MLM by its original authors)
+        │
+        ▼
+Fine-tune for Cybersecurity NER (Token Classification, 31-label BIO schema)
+        │
+        ▼
+Evaluate (Precision, Recall, F1 — seqeval, strict IOB2)
+        │
+        ▼
+Demo (Flask API + React frontend)
+```
 
 ---
 
-## Data Collection and Processing
+## Dataset
 
-The project uses data from the National Vulnerability Database (NVD), the official U.S. government repository of vulnerability information.
+**CyberNER** (`datasets/cyber/cyberner_clean.csv`) — a token-per-row CSV (~610k rows) derived from the CyNER dataset (Hugging Face), with columns `Word`, `Tag`, `Sentence_ID`.
 
-### Data Collection
-
-**Script:** `scripts/01_mlm_data_collection.py`
-
-Collects CVE (Common Vulnerabilities and Exposures) data from NVD API.
-
-```bash
-python scripts/01_mlm_data_collection.py
-```
-
-**What it does:**
-
-- Fetches up to 10,000 recent CVE records from NVD
-- Extracts vulnerability descriptions
-- Saves to `datasets/nvd/nvd_cves.json`
-- Respects API rate limits (6 seconds between requests)
-
-**Data Source:** https://nvd.nist.gov/  
-**API Endpoint:** https://services.nvd.nist.gov/rest/json/cves/2.0
-
-### Data Cleaning
-
-**Script:** `scripts/02_mlm_data_cleaning.py`
-
-Processes the collected NVD data for model training.
-
-```bash
-python scripts/02_mlm_data_cleaning.py
-```
-
-**Processing steps:**
-
-1. Extracts descriptions from JSON records
-2. Filters invalid or empty entries
-3. Normalizes text formatting
-4. Removes duplicate descriptions
-5. Creates clean corpus file
-
-**Output:** `datasets/cyber/corpus.txt` - Clean text corpus for MLM training
+- **Label schema:** `config/ner_cyber_labels.json` defines 31 BIO labels — `O` plus `B-`/`I-` of 15 cyber entity types: APT, CAMPAIGN, EXPLOIT, FILE, HASH, INDICATOR, INFRASTRUCTURE, IP, MALWARE, METHOD, SOFTWARE, THREAT_ACTOR, TOOL, URL, VULNERABILITY. A `tag_mapping` collapses the raw dataset tags into this schema; unmapped tags become `O`.
+- **Splits:** 80/20 train/test (seed 42), then 80/20 of train → train/validation (seed 42). The same splits are re-derived by `scripts/evaluate_ner.py` for local reproduction.
 
 ---
 
-## Model Architecture
+## Model Training (Fine-Tuning)
 
-**Base Model:** BERT (Bidirectional Encoder Representations from Transformers)
+Training is done in **`train_secbert_ner.ipynb`** (Google Colab, GPU runtime):
 
-**Adaptations:**
+1. Load `jackaduma/SecBERT` with a token-classification head (`AutoModelForTokenClassification`). The classification head is newly initialized — this is the part fine-tuning trains; the pre-trained SecBERT encoder is reused.
+2. Tokenize with the SecBERT tokenizer (`is_split_into_words=True`); only the first sub-token of each word carries the label, the rest are masked with `-100`.
+3. Fine-tune with Hugging Face `Trainer`: learning rate 3e-5, batch size 16, 10 epochs, weight decay 0.01, best checkpoint selected by validation F1.
+4. Save the model to `secbert_ner_final` and download/extract it to **`models/secbert_ner_final/`** in this repository.
 
-1. Vocabulary extension with cybersecurity-specific terms
-2. MLM fine-tuning on cybersecurity corpus
-3. NER fine-tuning for entity extraction
+---
 
-**Recognized Entity Types:**
+## Evaluation
 
-- Malware
-- Vulnerabilities (CVE IDs)
-- Software/Systems
-- Organizations/Threat Actors
-- Indicators of Compromise (IOCs)
-- Attack Patterns
+Entity-level metrics computed with **seqeval** (strict IOB2 matching):
+
+| Metric | Value |
+|---|---|
+| Precision | _(fill in after training)_ |
+| Recall | _(fill in after training)_ |
+| F1 Score | _(fill in after training)_ |
+
+- The notebook reports test-set Precision/Recall/F1 plus a per-entity classification report.
+- Locally, run `python scripts/evaluate_ner.py` — it re-derives the same held-out test split, evaluates `models/secbert_ner_final`, and writes `evaluation_results.json`.
 
 ---
 
@@ -90,42 +72,26 @@ python scripts/02_mlm_data_cleaning.py
 
 - Python 3.8 or higher
 - Node.js and npm
-- pip package manager
 
 ### Backend Setup
 
-1. Navigate to backend directory:
-
 ```bash
 cd backend
-```
-
-2. Install Python dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
-Required packages:
-
-- Flask (API server)
-- Flask-CORS (cross-origin requests)
-- transformers (Hugging Face)
-- torch (PyTorch)
+Required packages: Flask, Flask-CORS, transformers, torch.
 
 ### Frontend Setup
 
-1. Navigate to frontend directory:
-
 ```bash
 cd frontend
-```
-
-2. Install Node.js dependencies:
-
-```bash
 npm install
 ```
+
+### Model
+
+Run `train_secbert_ner.ipynb` on Google Colab and extract the resulting `secbert_ner_final.zip` to `models/secbert_ner_final/`.
 
 ---
 
@@ -133,129 +99,82 @@ npm install
 
 ### Start Backend Server
 
-From the project root directory:
+From the project root:
 
 ```bash
 python backend/ner_api.py
 ```
 
-The backend will:
-
-- Load the Mini-CyBERT NER model
-- Load the MLM model
-- Start Flask server on http://localhost:5001
-
-Wait for both models to load (approximately 20-30 seconds).
+The backend loads the fine-tuned SecBERT NER model and starts on http://localhost:5001.
 
 ### Start Frontend Interface
 
-In a new terminal, from the project root:
+In a new terminal:
 
 ```bash
 cd frontend
-npm run dev
+npm start
 ```
 
-Access the application at: http://localhost:5173
+Access the application at: http://localhost:3000
 
----
+### Using the Demo
 
-## Using the Application
+Enter cybersecurity text (e.g., vulnerability descriptions, threat reports), click "Analyze Text", and view the extracted entities.
 
-### NER Model (Named Entity Recognition)
-
-1. Select "NER Model" in the interface
-2. Enter cybersecurity text (e.g., vulnerability descriptions, threat reports)
-3. Click "Analyze Text"
-4. View extracted entities with their classifications
-
-**Example Input:**
+**Example input:**
 
 ```
 APT28 exploited CVE-2023-12345 in a phishing campaign targeting Windows systems.
 ```
 
-**Example Output:**
+**Example output:**
 
 - APT28: THREAT_ACTOR
 - CVE-2023-12345: VULNERABILITY
-- phishing: ATTACK_VECTOR
+- phishing: METHOD
 - Windows: SOFTWARE
 
-### MLM Model (Masked Language Modeling)
-
-1. Select "MLM Model" in the interface
-2. Enter text with [MASK] token where you want predictions
-3. Click "Analyze Text"
-4. View top 5 word predictions
-
-**Example Input:**
-
-```
-The attacker used a [MASK] exploit to gain access.
-```
-
-**Example Output:**
-
-1. zero-day
-2. remote
-3. buffer
-4. privilege
-5. sql
+> Note: the API additionally enhances model predictions with a post-processing dictionary lookup built from the training data (`datasets/cyber/entity_vocabulary.json`) to catch terms the model may miss.
 
 ---
 
 ## Project Structure
 
 ```
-mini-cybert/
+shiley-project/
 |
 |-- backend/
-|   |-- ner_api.py              # Flask API server
-|   |-- requirements.txt         # Python dependencies
+|   |-- ner_api.py                  # Flask API server (NER)
+|   |-- requirements.txt
 |
 |-- frontend/
 |   |-- src/
-|   |   |-- App.jsx             # React application
-|   |   |-- App.css             # Styling
-|   |-- package.json            # Node.js dependencies
+|   |   |-- App.jsx                 # React application (NER demo)
+|   |   |-- components/Header.jsx
+|   |-- package.json
 |
 |-- scripts/
-|   |-- 01_mlm_data_collection.py   # NVD data collection
-|   |-- 02_mlm_data_cleaning.py     # Data preprocessing
-|   |-- run_ner.py                  # NER inference script
+|   |-- evaluate_ner.py             # Entity-level evaluation (seqeval P/R/F1)
+|   |-- run_ner.py                  # Interactive NER inference CLI
+|   |-- clean_cyberner_dataset.py   # Dataset cleaning
+|   |-- build_dataset_vocabulary.py # Builds entity_vocabulary.json
+|
+|-- config/
+|   |-- ner_cyber_labels.json       # 31-label cyber BIO schema + tag mapping
 |
 |-- datasets/
-|   |-- nvd/                    # Raw NVD data
-|   |   |-- nvd_cves.json
-|   |-- cyber/                  # Processed data
-|       |-- corpus.txt          # MLM training corpus
-|       |-- cyberner.csv        # NER training data
+|   |-- cyber/
+|       |-- cyberner_clean.csv      # CyberNER training data
+|       |-- entity_vocabulary.json  # Post-processing lookup vocabulary
 |
 |-- models/
-|   |-- mini_cybert_weights/
-|       |-- mlm_final/          # MLM model weights
-|       |-- mini_cybert_final/  # NER model weights
+|   |-- secbert_ner_final/          # Fine-tuned SecBERT NER model (from Colab)
 |
-|-- README.md                   # This file
-|-- SETUP_GUIDE.txt             # Detailed setup instructions
+|-- train_secbert_ner.ipynb         # Colab fine-tuning notebook
+|-- README.md
+|-- SETUP_GUIDE.md
 ```
-
----
-
-## Model Training
-
-The Mini-CyBERT model was trained using the following process:
-
-1. **Data Collection:** 10,000 CVE descriptions from NVD
-2. **Vocabulary Extension:** Domain-specific terms added using TF-IDF
-3. **MLM Pre-training:** Masked language modeling on cybersecurity corpus
-4. **NER Fine-tuning:** Entity recognition on labeled cybersecurity entities
-
-Training data sources:
-
-- National Vulnerability Database (NVD)
-- CyNER Dataset (Hugging Face)
 
 ---
 
@@ -272,17 +191,6 @@ Content-Type: application/json
 }
 ```
 
-### MLM Endpoint
-
-```
-POST http://localhost:5001/api/mlm/predict
-Content-Type: application/json
-
-{
-  "text": "text with [MASK] token"
-}
-```
-
 ### Health Check
 
 ```
@@ -291,22 +199,11 @@ GET http://localhost:5001/api/health
 
 ---
 
-## Evaluation and Performance
-
-The model has been evaluated on cybersecurity NER tasks and shows improved performance over generic BERT models for:
-
-- Vulnerability identification
-- Threat actor recognition
-- Attack pattern classification
-- Indicator of Compromise (IOC) extraction
-
----
-
 ## References
 
-1. Ranade, P., Piplai, A., Joshi, A., & Finin, T. (2021). CyBERT: Contextualized Embeddings for the Cybersecurity Domain. IEEE Big Data.
+1. SecBERT — pre-trained BERT for the security domain: https://huggingface.co/jackaduma/SecBERT (pre-trained with MLM on APTnotes, Stucco-Data, CASIE, and SemEval-2018 Task 8 corpora by its original authors).
 2. Devlin, J., et al. (2018). BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding.
-3. National Vulnerability Database (NVD). National Institute of Standards and Technology. https://nvd.nist.gov/
+3. Alam, M. T., et al. (2022). CyNER: A Python Library for Cybersecurity Named Entity Recognition.
 
 ---
 
@@ -314,10 +211,6 @@ The model has been evaluated on cybersecurity NER tasks and shows improved perfo
 
 This project is developed for academic research purposes.
 
-## Contact
-
-For questions or issues, please refer to the project documentation or contact the development team.
-
 ---
 
-**Developed as part of Mini-CyBERT: Building a Lightweight Cybersecurity-Aware Language Model**
+**Developed as part of: Fine-Tuning SecBERT for Cybersecurity Named Entity Recognition**

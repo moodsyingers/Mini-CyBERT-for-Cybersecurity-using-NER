@@ -1,14 +1,14 @@
 """
-Mini-CyBERT Package Initialization
+SecBERT Cybersecurity NER Package Initialization
 """
 
-__version__ = "1.0.0"
-__author__ = "Mini-CyBERT Team"
-__description__ = "A lightweight cybersecurity-aware language model using Hugging Face Transformers"
+__version__ = "2.0.0"
+__author__ = "SecBERT NER Team"
+__description__ = "Cybersecurity Named Entity Recognition by fine-tuning SecBERT (Hugging Face Transformers)"
 
 # Package metadata
 PACKAGE_INFO = {
-    "name": "mini-cybert",
+    "name": "secbert-cyber-ner",
     "version": __version__,
     "description": __description__,
     "author": __author__,

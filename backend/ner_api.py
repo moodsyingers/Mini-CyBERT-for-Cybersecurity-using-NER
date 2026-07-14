@@ -1,6 +1,6 @@
 """
-Flask Backend API for Mini-CyBERT Models (NER + MLM)
-Provides cybersecurity entity recognition and masked language modeling.
+Flask Backend API for the fine-tuned SecBERT NER model.
+Provides cybersecurity entity recognition.
 Long text is split into sentences; NER runs per sentence (sliding window if >512 tokens), then results are combined.
 """
 
@@ -13,10 +13,8 @@ import torch
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from transformers import (
-    pipeline,
     AutoTokenizer,
     AutoModelForTokenClassification,
-    AutoModelForMaskedLM,
 )
 
 app = Flask(__name__)
@@ -24,8 +22,7 @@ CORS(app)  # Enable CORS for frontend
 
 # Model paths
 BASE_DIR = Path(__file__).parent.parent
-NER_MODEL_PATH = BASE_DIR / "models" / "mini_cybert_final"
-MLM_MODEL_PATH = BASE_DIR / "models" / "mlm_final"
+NER_MODEL_PATH = BASE_DIR / "models" / "secbert_ner_final"
 VOCABULARY_PATH = BASE_DIR / "datasets" / "cyber" / "entity_vocabulary.json"
 
 # Model max length (BERT limit)
@@ -35,11 +32,9 @@ NER_WINDOW_STRIDE = 256
 
 # Global model variables
 ner_pipeline = None
-mlm_pipeline = None
 ner_tokenizer = None
 ner_model = None
 ner_loaded = False
-mlm_loaded = False
 
 # Dataset vocabulary (loaded from cyberner_clean.csv)
 dataset_vocabulary = None
@@ -458,8 +453,8 @@ def run_ner_on_text(text, tokenizer, model):
 
 
 def load_models():
-    """Load both NER and MLM models, and dataset vocabulary"""
-    global ner_pipeline, mlm_pipeline, ner_loaded, mlm_loaded
+    """Load the SecBERT NER model and dataset vocabulary"""
+    global ner_pipeline, ner_loaded
     global ner_tokenizer, ner_model  # Store separately for custom processing
     global dataset_vocabulary, vocab_loaded
     
@@ -494,24 +489,8 @@ def load_models():
     except Exception as e:
         print(f"[ERROR] loading NER model: {e}")
         ner_loaded = False
-    
-    # Load MLM model
-    try:
-        print(f"Loading MLM model from: {MLM_MODEL_PATH}")
-        tokenizer = AutoTokenizer.from_pretrained(str(MLM_MODEL_PATH))
-        model = AutoModelForMaskedLM.from_pretrained(str(MLM_MODEL_PATH))
-        mlm_pipeline = pipeline(
-            "fill-mask",
-            model=model,
-            tokenizer=tokenizer
-        )
-        mlm_loaded = True
-        print("[SUCCESS] MLM model loaded successfully!")
-    except Exception as e:
-        print(f"[ERROR] loading MLM model: {e}")
-        mlm_loaded = False
-    
-    return ner_loaded or mlm_loaded
+
+    return ner_loaded
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -519,7 +498,6 @@ def health_check():
     health_info = {
         'status': 'healthy',
         'ner_loaded': ner_loaded,
-        'mlm_loaded': mlm_loaded,
         'vocabulary_loaded': vocab_loaded
     }
     
@@ -566,72 +544,23 @@ def analyze_ner():
         return jsonify({'error': str(e)}), 500
 
 
-
-@app.route('/api/mlm/predict', methods=['POST'])
-def predict_mlm():
-    """Predict masked words in text"""
-    try:
-        if not mlm_loaded:
-            return jsonify({'error': 'MLM model not loaded'}), 500
-        
-        data = request.json
-        text = data.get('text', '')
-        
-        if not text:
-            return jsonify({'error': 'No text provided'}), 400
-        
-        if '[MASK]' not in text and '<mask>' not in text:
-            return jsonify({'error': 'Text must contain [MASK] or <mask> token'}), 400
-        
-        # Perform fill-mask; get more candidates to filter out single-char tokens
-        results = mlm_pipeline(text, top_k=20)
-        
-        # Keep only word-like predictions (length >= 2, has at least one letter)
-        def is_word_like(s):
-            t = (s or '').strip()
-            return len(t) >= 2 and any(c.isalpha() for c in t)
-        word_like = [r['token_str'].strip() for r in results if is_word_like(r['token_str'])]
-        seen = set()
-        unique = []
-        for w in word_like:
-            if w not in seen:
-                seen.add(w)
-                unique.append(w)
-        predictions = unique[:5]
-        if not predictions:
-            predictions = [r['token_str'].strip() for r in results[:3]]
-        
-        response = {
-            'text': text,
-            'predictions': predictions
-        }
-        
-        return jsonify(response)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 if __name__ == '__main__':
     print("="*70)
-    print("MINI-CYBERT API SERVER (NER + MLM)")
+    print("SECBERT NER API SERVER")
     print("="*70)
-    
+
     if load_models():
         print("\nStarting Flask server on http://localhost:5001")
         print("\nAPI Endpoints:")
-        if ner_loaded:
-            print("  NER Model:")
-            print("    - POST /api/ner/analyze  - Extract entities")
-        if mlm_loaded:
-            print("  MLM Model:")
-            print("    - POST /api/mlm/predict  - Predict masked words")
+        print("  NER Model:")
+        print("    - POST /api/ner/analyze  - Extract entities")
         print("  General:")
         print("    - GET  /api/health       - Health check")
         print("="*70)
-        
+
         app.run(debug=False, host='0.0.0.0', port=5001)
     else:
-        print("\nFailed to load models!")
-        print("Please ensure models are placed at:")
+        print("\nFailed to load the NER model!")
+        print("Please ensure the fine-tuned SecBERT model is placed at:")
         print(f"  NER: {NER_MODEL_PATH}")
-        print(f"  MLM: {MLM_MODEL_PATH}")
+        print("(Run train_secbert_ner.ipynb on Colab to produce it.)")

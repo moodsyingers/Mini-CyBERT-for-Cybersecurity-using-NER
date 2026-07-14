@@ -18,7 +18,7 @@ from seqeval.scheme import IOB2
 # Configuration (paths relative to project root)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "mini_cybert_final")
+MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "secbert_ner_final")
 CSV_PATH = os.path.join(PROJECT_ROOT, "datasets", "cyber", "cyberner_clean.csv")
 SCHEMA_PATH = os.path.join(PROJECT_ROOT, "datasets", "cyber", "ner_cyber_labels.json")
 if not os.path.exists(SCHEMA_PATH):

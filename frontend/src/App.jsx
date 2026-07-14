@@ -3,7 +3,6 @@ import './App.css';
 import Header from './components/Header';
 
 function App() {
-  const [selectedModel, setSelectedModel] = useState('ner'); // 'ner' or 'mlm'
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -19,17 +18,10 @@ function App() {
   const handleAnalyze = async () => {
     console.log('=== ANALYZE BUTTON CLICKED ===');
     console.log('Input Text:', inputText);
-    console.log('Selected Model:', selectedModel);
 
     if (!inputText.trim()) {
       console.log('❌ Error: Empty text');
       setError('Please enter some text');
-      return;
-    }
-
-    if (selectedModel === 'mlm' && !inputText.includes('[MASK]')) {
-      console.log('❌ Error: MLM requires [MASK] token');
-      setError('MLM model requires [MASK] token in the text');
       return;
     }
 
@@ -39,16 +31,8 @@ function App() {
     console.log('🔄 Loading started...');
 
     try {
-      let endpoint = '';
-      let requestBody = {};
-
-      if (selectedModel === 'ner') {
-        endpoint = `${API_URL}/api/ner/analyze`;
-        requestBody = { text: inputText };
-      } else {
-        endpoint = `${API_URL}/api/mlm/predict`;
-        requestBody = { text: inputText };
-      }
+      const endpoint = `${API_URL}/api/ner/analyze`;
+      const requestBody = { text: inputText };
 
       console.log('📡 Making request to:', endpoint);
       console.log('📦 Request body:', requestBody);
@@ -70,15 +54,15 @@ function App() {
 
       const data = await response.json();
       console.log('✅ Response data:', data);
-      
+
       // Filter out two-letter words from NER results
-      if (selectedModel === 'ner' && data.entities) {
+      if (data.entities) {
         // First filter by length
         data.entities = data.entities.filter(entity => {
           const word = (entity.word || '').trim().replace(/[.,;:!?]/g, '');
           return word.length > 2;
         });
-        
+
         // Remove duplicates - keep only unique word + entity_type combinations
         const seen = new Set();
         data.entities = data.entities.filter(entity => {
@@ -90,10 +74,10 @@ function App() {
           seen.add(key);
           return true;
         });
-        
+
         data.entity_count = data.entities.length;
         console.log('✅ After deduplication, entity count:', data.entity_count);
-        
+
         // Also filter sentence entities
         if (data.sentences) {
           data.sentences = data.sentences.map(sent => ({
@@ -105,21 +89,7 @@ function App() {
           }));
         }
       }
-      
-      // Filter out two-letter words and duplicates from MLM predictions
-      if (selectedModel === 'mlm' && data.predictions) {
-        // Filter by length
-        data.predictions = data.predictions.filter(word => {
-          const cleanWord = (word || '').trim().replace(/[.,;:!?]/g, '');
-          return cleanWord.length > 2;
-        });
-        
-        // Remove duplicate predictions (case-insensitive)
-        const uniquePredictions = [...new Set(data.predictions.map(w => w.toLowerCase()))];
-        data.predictions = uniquePredictions;
-        console.log('✅ Unique MLM predictions:', data.predictions.length);
-      }
-      
+
       console.log('✅ Setting result state');
       setResult(data);
     } catch (err) {
@@ -152,76 +122,31 @@ function App() {
     return colors[entityType] || '#868e96';
   };
 
-  const exampleTexts = {
-    ner: [
-      'APT28, also known as Fancy Bear, used phishing to exploit CVE-2023-12345.',
-      'The ransomware Conti targeted healthcare using Microsoft Exchange vulnerabilities.',
-      'Attackers exploited CVE-2021-44228 (Log4Shell) to gain network access.',
-    ],
-    mlm: [
-      'The attacker used a [MASK] exploit to gain access.',
-      'APT28 deployed [MASK] to steal credentials.',
-      'The vulnerability allows remote [MASK] execution.',
-      '... suggesting a [MASK] in the middle attack.',
-    ],
-  };
+  const exampleTexts = [
+    'APT28, also known as Fancy Bear, used phishing to exploit CVE-2023-12345.',
+    'The ransomware Conti targeted healthcare using Microsoft Exchange vulnerabilities.',
+    'Attackers exploited CVE-2021-44228 (Log4Shell) to gain network access.',
+  ];
 
   return (
     <div className="app">
       <Header />
-      
+
       <div className="container">
         <div className="main-content">
           <div className="card">
-            <h2>Cybersecurity Text Analysis</h2>
-            <p className="subtitle">Choose a model and analyze cybersecurity text</p>
-
-            {/* Model Selection */}
-            <div className="model-selection">
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  value="ner"
-                  checked={selectedModel === 'ner'}
-                  onChange={(e) => {
-                    console.log('📝 Model changed to:', e.target.value);
-                    setSelectedModel(e.target.value);
-                  }}
-                />
-                <span className="radio-text">
-                  <strong>NER Model</strong> - Extract cybersecurity entities
-                </span>
-              </label>
-
-              <label className="radio-label">
-                <input
-                  type="radio"
-                  value="mlm"
-                  checked={selectedModel === 'mlm'}
-                  onChange={(e) => {
-                    console.log('📝 Model changed to:', e.target.value);
-                    setSelectedModel(e.target.value);
-                  }}
-                />
-                <span className="radio-text">
-                  <strong>MLM Model</strong> - Predict masked words (use [MASK])
-                </span>
-              </label>
-            </div>
+            <h2>Cybersecurity Named Entity Recognition</h2>
+            <p className="subtitle">
+              Extract cybersecurity entities with SecBERT fine-tuned for NER
+            </p>
 
             {/* Input Section */}
             <div className="input-section">
-              <label>
-                {selectedModel === 'ner' ? 'Enter cybersecurity text:' : 'Enter text with [MASK]:'}
-              </label>
+              <label>Enter cybersecurity text:</label>
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder={
-                  selectedModel === 'ner'
-                    ? 'e.g., APT28 exploited CVE-2023-12345 in a phishing campaign'
-                    : 'e.g., The attacker used a [MASK] exploit to gain access'
-                }
+                placeholder="e.g., APT28 exploited CVE-2023-12345 in a phishing campaign"
                 rows={4}
               />
 
@@ -244,49 +169,27 @@ function App() {
             {/* Results Section */}
             {result && (
               <div className="results-section">
-                {selectedModel === 'ner' ? (
-                  // NER Results - Show only combined entities
-                  <>
-                    <h3>Detected Entities ({result.entity_count})</h3>
-                    {result.entities && result.entities.length > 0 ? (
-                      <div className="entities-grid">
-                        {result.entities.map((entity, index) => (
-                          <div
-                            key={index}
-                            className="entity-card"
-                            style={{ borderLeftColor: getEntityColor(entity.entity_type) }}
-                          >
-                            <div className="entity-word">{entity.word}</div>
-                            <div
-                              className="entity-type"
-                              style={{ backgroundColor: getEntityColor(entity.entity_type) }}
-                            >
-                              {entity.entity_type}
-                            </div>
-                          </div>
-                        ))}
+                <h3>Detected Entities ({result.entity_count})</h3>
+                {result.entities && result.entities.length > 0 ? (
+                  <div className="entities-grid">
+                    {result.entities.map((entity, index) => (
+                      <div
+                        key={index}
+                        className="entity-card"
+                        style={{ borderLeftColor: getEntityColor(entity.entity_type) }}
+                      >
+                        <div className="entity-word">{entity.word}</div>
+                        <div
+                          className="entity-type"
+                          style={{ backgroundColor: getEntityColor(entity.entity_type) }}
+                        >
+                          {entity.entity_type}
+                        </div>
                       </div>
-                    ) : (
-                      <p>No entities detected</p>
-                    )}
-                  </>
+                    ))}
+                  </div>
                 ) : (
-                  // MLM Results
-                  <>
-                    <h3>Predictions for [MASK]</h3>
-                    {result.predictions && result.predictions.length > 0 ? (
-                      <div className="predictions-list">
-                        {result.predictions.map((pred, index) => (
-                          <div key={index} className="prediction-item">
-                            <span className="prediction-rank">{index + 1}</span>
-                            <span className="prediction-word">{pred}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>No predictions available</p>
-                    )}
-                  </>
+                  <p>No entities detected</p>
                 )}
               </div>
             )}
@@ -295,7 +198,7 @@ function App() {
             <div className="examples-section">
               <h4>Example Texts:</h4>
               <div className="examples-grid">
-                {exampleTexts[selectedModel].map((example, index) => (
+                {exampleTexts.map((example, index) => (
                   <button
                     key={index}
                     onClick={() => setInputText(example)}

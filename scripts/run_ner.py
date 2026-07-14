@@ -8,7 +8,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 # Get the project root directory (parent of scripts folder)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "mini_cybert_final")
+MODEL_PATH = os.path.join(PROJECT_ROOT, "models", "secbert_ner_final")
 
 # Model max length (BERT limit)
 MAX_LENGTH = 512

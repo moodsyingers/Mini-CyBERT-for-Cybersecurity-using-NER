@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 import torch
 
 # Model path
-NER_PATH = r"e:\project\shiley-project\models\mini_cybert_final"
+NER_PATH = r"e:\project\shiley-project\models\secbert_ner_final"
 
 def test_text(text):
     print("\n" + "="*70)

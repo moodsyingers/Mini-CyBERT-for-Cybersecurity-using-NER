@@ -1,6 +1,5 @@
 """
-Client regression tests (plan: cyber-only NER/MLM).
-- MLM: "... suggesting a [MASK] in the middle attack." -> "man" must appear in top-5.
+Client regression test (cyber-only NER).
 - NER: Client SSL/man-in-the-middle sentence -> at least one cyber entity (not O).
 """
 
@@ -13,8 +12,7 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 # Add project root for imports if needed
 sys.path.insert(0, PROJECT_ROOT)
 
-MLM_PATH = os.path.join(PROJECT_ROOT, "models", "mlm_final")
-NER_PATH = os.path.join(PROJECT_ROOT, "models", "mini_cybert_final")
+NER_PATH = os.path.join(PROJECT_ROOT, "models", "secbert_ner_final")
 
 # Client sentence (must yield at least one entity after retraining)
 CLIENT_SENTENCE = (
@@ -22,50 +20,6 @@ CLIENT_SENTENCE = (
     "certificate presented by the website does not match the expected issuer suggesting "
     "a man in the middle attack."
 )
-
-MLM_INPUT = "... suggesting a [MASK] in the middle attack."
-EXPECTED_MLM_TOKEN = "man"
-TOP_K = 20
-TOP_N_WORD_LIKE = 5
-
-
-def is_word_like(token_str):
-    s = (token_str or "").strip()
-    if len(s) < 2:
-        return False
-    if not any(c.isalpha() for c in s):
-        return False
-    return True
-
-
-def run_mlm_test():
-    """MLM: 'man' should be in top-5 word-like predictions for '[MASK] in the middle attack'."""
-    if not os.path.isdir(MLM_PATH):
-        print(f"SKIP MLM test: model not found at {MLM_PATH}")
-        return None
-    try:
-        from transformers import pipeline, AutoTokenizer, AutoModelForMaskedLM
-    except ImportError:
-        print("SKIP MLM test: transformers not installed")
-        return None
-
-    tokenizer = AutoTokenizer.from_pretrained(MLM_PATH)
-    model = AutoModelForMaskedLM.from_pretrained(MLM_PATH)
-    pipe = pipeline("fill-mask", model=model, tokenizer=tokenizer)
-    results = pipe(MLM_INPUT, top_k=TOP_K)
-    word_like = [r["token_str"].strip() for r in results if is_word_like(r["token_str"])]
-    seen = set()
-    unique = []
-    for w in word_like:
-        if w not in seen:
-            seen.add(w)
-            unique.append(w)
-    top5 = unique[:TOP_N_WORD_LIKE]
-    passed = EXPECTED_MLM_TOKEN.lower() in [t.lower() for t in top5]
-    print(f"  MLM input: {MLM_INPUT!r}")
-    print(f"  Top-5 word-like: {top5}")
-    print(f"  Expected '{EXPECTED_MLM_TOKEN}' in top-5: {passed}")
-    return passed
 
 
 def run_ner_test():
@@ -118,18 +72,13 @@ def main():
     print("CLIENT REGRESSION TESTS")
     print("=" * 70)
 
-    mlm_ok = run_mlm_test()
-    print()
     ner_ok = run_ner_test()
     print()
 
     print("=" * 70)
-    if mlm_ok is None and ner_ok is None:
-        print("No tests run (models or deps missing). Exit 0.")
+    if ner_ok is None:
+        print("No tests run (model or deps missing). Exit 0.")
         sys.exit(0)
-    if mlm_ok is False:
-        print("FAIL: MLM test (expected 'man' in top-5 for man-in-the-middle).")
-        sys.exit(1)
     if ner_ok is False:
         print("FAIL: NER test (expected at least one entity on client sentence).")
         sys.exit(1)

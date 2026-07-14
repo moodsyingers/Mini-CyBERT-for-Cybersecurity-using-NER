@@ -1,26 +1,24 @@
-# Mini-CyBERT Setup Guide
+# SecBERT Cybersecurity NER — Setup Guide
 
-This guide provides step-by-step instructions for setting up and running the Mini-CyBERT cybersecurity language model application.
+Step-by-step instructions for setting up and running the SecBERT NER application.
 
 ---
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Data Collection and Preparation](#data-collection-and-preparation)
-3. [Backend Setup](#backend-setup)
-4. [Frontend Setup](#frontend-setup)
-5. [Running the Application](#running-the-application)
-6. [Using the Application](#using-the-application)
-7. [Troubleshooting](#troubleshooting)
+1. [Prerequisites](#1-prerequisites)
+2. [Getting the Model](#2-getting-the-model)
+3. [Backend Setup](#3-backend-setup)
+4. [Frontend Setup](#4-frontend-setup)
+5. [Running the Application](#5-running-the-application)
+6. [Evaluating the Model](#6-evaluating-the-model)
+7. [Troubleshooting](#7-troubleshooting)
 
 ---
 
 ## 1. Prerequisites
 
-Before starting, ensure you have the following installed:
-
-**Required Software:**
+**Required software:**
 
 - Python 3.8 or higher
 - Node.js and npm
@@ -36,120 +34,54 @@ npm --version
 
 ---
 
-## 2. Data Collection and Preparation
+## 2. Getting the Model
 
-The project uses vulnerability data from the National Vulnerability Database.
+The demo needs the fine-tuned SecBERT NER model at `models/secbert_ner_final/`.
 
-### Step 1: Collect NVD Data
-
-From the project root directory:
-
-```bash
-python scripts/01_mlm_data_collection.py
-```
-
-**This will:**
-
-- Fetch 10,000 CVE records from NVD API
-- Save to `datasets/nvd/nvd_cves.json`
-- Take approximately 5-7 minutes
-
-### Step 2: Clean and Process Data
-
-After collection completes:
-
-```bash
-python scripts/02_mlm_data_cleaning.py
-```
-
-**This will:**
-
-- Process the collected CVE data
-- Create clean text corpus
-- Save to `datasets/cyber/corpus.txt`
-- Take approximately 1-2 minutes
-
-**Output Files:**
+1. Open `train_secbert_ner.ipynb` in Google Colab (GPU runtime).
+2. Upload `datasets/cyber/cyberner_clean.csv` and `config/ner_cyber_labels.json` when prompted.
+3. Run all cells. The notebook fine-tunes `jackaduma/SecBERT` for token classification (the base model was already MLM pre-trained on cybersecurity corpora by its original authors — no MLM training happens here) and evaluates it on the held-out test set.
+4. Download `secbert_ner_final.zip` from the final cell and extract it so that the files land at:
 
 ```
-datasets/nvd/nvd_cves.json           (Raw CVE data)
-datasets/cyber/corpus.txt             (Processed corpus)
-datasets/cyber/cleaning_report.json   (Statistics)
+models/secbert_ner_final/
+|-- config.json
+|-- model.safetensors
+|-- tokenizer_config.json
+|-- vocab.txt / tokenizer.json
 ```
 
 ---
 
 ## 3. Backend Setup
 
-The backend provides API endpoints for the NER and MLM models.
-
-### Step 1: Install Python Dependencies
-
-Navigate to backend directory:
+The backend provides the NER API endpoint.
 
 ```bash
 cd backend
-```
-
-Install required packages:
-
-```bash
 pip install -r requirements.txt
 ```
 
-**Required packages:**
-
-- Flask
-- Flask-CORS
-- transformers
-- torch
-
-### Step 2: Verify Model Files
-
-Ensure model weights exist in:
-
-```
-models/mini_cybert_weights/mlm_final/
-models/mini_cybert_weights/mini_cybert_final/
-```
-
-If models are missing, they need to be trained first.
+**Required packages:** Flask, Flask-CORS, transformers, torch.
 
 ---
 
 ## 4. Frontend Setup
 
-The frontend provides a web interface for interacting with the models.
-
-### Step 1: Install Node.js Dependencies
-
-Navigate to frontend directory:
-
 ```bash
 cd frontend
-```
-
-Install packages:
-
-```bash
 npm install
 ```
-
-**This will install:**
-
-- React
-- Vite
-- Required UI libraries
 
 ---
 
 ## 5. Running the Application
 
-Two servers need to be running simultaneously.
+Two servers run simultaneously.
 
-### Terminal 1 - Backend Server
+### Terminal 1 — Backend
 
-From project root:
+From the project root:
 
 ```bash
 python backend/ner_api.py
@@ -158,59 +90,35 @@ python backend/ner_api.py
 **Expected output:**
 
 ```
-Loading NER model from: models/mini_cybert_weights/mini_cybert_final
-NER model loaded successfully!
-Loading MLM model from: models/mini_cybert_weights/mlm_final
-MLM model loaded successfully!
+Loading NER model from: models/secbert_ner_final
+[SUCCESS] NER model loaded successfully!
 Starting Flask server on http://localhost:5001
 ```
 
-Wait for both models to load (20-30 seconds).
-
-### Terminal 2 - Frontend Server
-
-Open a new terminal. From project root:
+### Terminal 2 — Frontend
 
 ```bash
 cd frontend
-npm run dev
+npm start
 ```
 
-**Expected output:**
+Open the browser at **http://localhost:3000**.
 
-```
-VITE ready in XXX ms
-Local: http://localhost:5173
-```
+### Using the Application
 
-### Access Application
-
-Open browser and navigate to: **http://localhost:5173**
-
----
-
-## 6. Using the Application
-
-### NER Model (Named Entity Recognition)
-
-**Purpose:** Extract and classify cybersecurity entities from text
-
-**Steps:**
-
-1. Select "NER Model" radio button
-2. Enter cybersecurity text in the input field
-3. Click "Analyze Text" button
-4. View extracted entities with their classifications
+1. Enter cybersecurity text in the input field.
+2. Click "Analyze Text".
+3. View extracted entities with their classifications.
 
 **Example:**
 
-**Input:**
+Input:
 
 ```
 APT28 exploited CVE-2023-12345 in Windows
 ```
 
-**Output:**
+Output:
 
 ```
 APT28 -> THREAT_ACTOR
@@ -218,97 +126,56 @@ CVE-2023-12345 -> VULNERABILITY
 Windows -> SOFTWARE
 ```
 
-### MLM Model (Masked Language Modeling)
+---
 
-**Purpose:** Predict masked words in cybersecurity context
+## 6. Evaluating the Model
 
-**Steps:**
+To reproduce the test-set metrics locally (Precision, Recall, F1 — seqeval, strict IOB2):
 
-1. Select "MLM Model" radio button
-2. Enter text with `<mask>` token (RoBERTa model)
-3. Click "Analyze Text" button
-4. View top 5 word predictions
-
-**Example:**
-
-**Input:**
-
-```
-The attacker used a <mask> exploit
+```bash
+pip install -r requirements.txt   # project root; includes seqeval + datasets
+python scripts/evaluate_ner.py
 ```
 
-**Output:**
-
-```
-1. zero-day
-2. remote
-3. buffer
-4. privilege
-5. sql
-```
+This re-derives the same held-out test split used in the notebook (seed 42), evaluates `models/secbert_ner_final`, prints overall and per-entity metrics, and writes `evaluation_results.json`.
 
 ---
 
 ## 7. Troubleshooting
 
-### Issue: Backend won't start
+### Backend won't start
 
-**Solution:**
+- Verify Python dependencies are installed.
+- Check the model exists at `models/secbert_ner_final/` (see section 2).
+- Ensure port 5001 is not already in use.
 
-- Verify Python dependencies are installed
-- Check that model files exist in `models/` directory
-- Ensure port 5001 is not already in use
+### Frontend won't connect
 
-### Issue: Frontend won't connect
+- Ensure the backend is running on port 5001.
+- Check the browser console for errors.
+- Verify CORS is enabled in the backend (it is by default).
 
-**Solution:**
+### Models loading slowly
 
-- Ensure backend is running on port 5001
-- Check browser console for errors
-- Verify CORS is enabled in backend
+- First load takes ~20-30 seconds; subsequent requests are fast.
 
-### Issue: Models loading slowly
+### Out of memory
 
-**This is normal behavior:**
+- Close other applications.
+- Inference runs fine on CPU; no GPU is required locally.
 
-- First load takes 20-30 seconds (loading 500MB+ models)
-- Subsequent requests are fast
-- Be patient during initial load
+### Port already in use
 
-### Issue: API rate limit (data collection)
-
-**Solution:**
-
-- Script already implements 6-second delays
-- For faster collection, obtain NVD API key
-- Visit: https://nvd.nist.gov/developers
-
-### Issue: Out of memory
-
-**Solution:**
-
-- Close other applications
-- Reduce batch size if training
-- Use CPU instead of GPU for inference
-
-### Issue: Port already in use
-
-**Backend (port 5001):**
-
-- Change port in `backend/ner_api.py`
-
-**Frontend (port 5173):**
-
-- Change port in `frontend/vite.config.js`
+- Backend (5001): change the port at the bottom of `backend/ner_api.py`.
+- Frontend (3000): set the `PORT` environment variable before `npm start`.
 
 ---
 
 ## Quick Start Summary
 
 ```bash
-# 1. Collect data
-python scripts/01_mlm_data_collection.py
-python scripts/02_mlm_data_cleaning.py
+# 1. Produce the model (Google Colab)
+#    Run train_secbert_ner.ipynb, extract zip to models/secbert_ner_final/
 
 # 2. Install dependencies
 cd backend && pip install -r requirements.txt && cd ..
@@ -318,12 +185,12 @@ cd frontend && npm install && cd ..
 python backend/ner_api.py
 
 # 4. Start frontend (new terminal)
-cd frontend && npm run dev
+cd frontend && npm start
 
 # 5. Open browser
-# http://localhost:5173
+# http://localhost:3000
 ```
 
 ---
 
-For additional help or documentation, refer to `README.md` in the project root.
+For project details, methodology, and evaluation results, see `README.md`.

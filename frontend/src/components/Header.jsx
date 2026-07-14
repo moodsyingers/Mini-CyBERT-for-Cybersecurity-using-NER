@@ -76,12 +76,12 @@ function Header() {
               letterSpacing: '-1px',
               lineHeight: '1'
             }}>
-              CyBert <span style={{ 
+              SecBERT <span style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 fontWeight: '900'
-              }}>AI</span>
+              }}>NER</span>
             </h1>
             <span style={{
               fontSize: '13px',
