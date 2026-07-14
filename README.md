@@ -47,7 +47,7 @@ Training is done in **`train_secbert_ner.ipynb`** (Google Colab, GPU runtime):
 1. Load `jackaduma/SecBERT` with a token-classification head (`AutoModelForTokenClassification`). The classification head is newly initialized — this is the part fine-tuning trains; the pre-trained SecBERT encoder is reused.
 2. Tokenize with the SecBERT tokenizer (`is_split_into_words=True`); only the first sub-token of each word carries the label, the rest are masked with `-100`.
 3. Fine-tune with Hugging Face `Trainer`: learning rate 3e-5, batch size 16, 10 epochs, weight decay 0.01, best checkpoint selected by validation F1.
-4. Save the model to `secbert_ner_final` and download/extract it to **`models/secbert_ner_final/`** in this repository.
+4. The trained model is saved to Google Drive (`MyDrive/models/secbert_ner_final.zip`); extract it to **`models/secbert_ner_final/`** in this repository.
 
 ---
 
@@ -125,7 +125,7 @@ Access the application at: http://localhost:3000
 
 ### Using the Demo
 
-Enter cybersecurity text (e.g., vulnerability descriptions, threat reports), click "Analyze Text", and view the extracted entities.
+Enter cybersecurity text (e.g., vulnerability descriptions, threat reports) or pick one of the built-in examples, then click "Analyze text". Detected entities are highlighted inline in the annotated text and summarized by type.
 
 **Example input:**
 
@@ -135,7 +135,7 @@ APT28 exploited CVE-2023-12345 in a phishing campaign targeting Windows systems.
 
 **Example output:**
 
-- APT28: THREAT_ACTOR
+- APT28: APT
 - CVE-2023-12345: VULNERABILITY
 - phishing: METHOD
 - Windows: SOFTWARE
