@@ -1,0 +1,115 @@
+{
+  "model_path": "E:\\project\\shiley-project\\models\\secbert_ner_final",
+  "validation_size": 2009,
+  "total_tokens_evaluated": 117969,
+  "entity_level_metrics": {
+    "overall": {
+      "precision": 0.6280672268907563,
+      "recall": 0.6231449057862265,
+      "f1_score": 0.6255963840294635
+    },
+    "per_label": {
+      "APT": {
+        "precision": 0.7053789731051344,
+        "recall": 0.7221526908635795,
+        "f1_score": 0.7136672850958565,
+        "support": 799
+      },
+      "CAMPAIGN": {
+        "precision": 0.3125,
+        "recall": 0.125,
+        "f1_score": 0.17857142857142858,
+        "support": 40
+      },
+      "EXPLOIT": {
+        "precision": 0.8098859315589354,
+        "recall": 0.8623481781376519,
+        "f1_score": 0.8352941176470587,
+        "support": 247
+      },
+      "FILE": {
+        "precision": 0.6714490674318508,
+        "recall": 0.6923076923076923,
+        "f1_score": 0.6817188638018936,
+        "support": 676
+      },
+      "HASH": {
+        "precision": 0.7352941176470589,
+        "recall": 0.8152173913043478,
+        "f1_score": 0.7731958762886598,
+        "support": 92
+      },
+      "INDICATOR": {
+        "precision": 0.7058823529411765,
+        "recall": 0.7058823529411765,
+        "f1_score": 0.7058823529411765,
+        "support": 272
+      },
+      "INFRASTRUCTURE": {
+        "precision": 0.4318181818181818,
+        "recall": 0.5033112582781457,
+        "f1_score": 0.4648318042813456,
+        "support": 151
+      },
+      "IP": {
+        "precision": 0.7323943661971831,
+        "recall": 0.8,
+        "f1_score": 0.7647058823529411,
+        "support": 65
+      },
+      "MALWARE": {
+        "precision": 0.6316695352839932,
+        "recall": 0.643859649122807,
+        "f1_score": 0.6377063423110338,
+        "support": 1140
+      },
+      "METHOD": {
+        "precision": 0.32450331125827814,
+        "recall": 0.2648648648648649,
+        "f1_score": 0.29166666666666663,
+        "support": 370
+      },
+      "SOFTWARE": {
+        "precision": 0.610223642172524,
+        "recall": 0.6324503311258278,
+        "f1_score": 0.6211382113821139,
+        "support": 302
+      },
+      "THREAT_ACTOR": {
+        "precision": 0.4652777777777778,
+        "recall": 0.3941176470588235,
+        "f1_score": 0.42675159235668786,
+        "support": 170
+      },
+      "TOOL": {
+        "precision": 0.5867828612926652,
+        "recall": 0.574271499644634,
+        "f1_score": 0.5804597701149425,
+        "support": 1407
+      },
+      "URL": {
+        "precision": 0.65,
+        "recall": 0.6842105263157895,
+        "f1_score": 0.6666666666666667,
+        "support": 19
+      },
+      "VULNERABILITY": {
+        "precision": 0.7741935483870968,
+        "recall": 0.680161943319838,
+        "f1_score": 0.7241379310344828,
+        "support": 247
+      }
+    }
+  },
+  "confusion_breakdown": {
+    "true_o_tokens": 106580,
+    "true_entity_tokens": 11389,
+    "true_o_pred_o": 104739,
+    "true_o_pred_entity": 1841,
+    "true_entity_pred_o": 3676,
+    "true_entity_pred_entity": 7713,
+    "entity_detection_precision": 0.8073058404856605,
+    "entity_detection_recall": 0.6772324172447098,
+    "entity_detection_f1": 0.7365706918779544
+  }
+}

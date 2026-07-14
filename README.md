@@ -53,16 +53,21 @@ Training is done in **`train_secbert_ner.ipynb`** (Google Colab, GPU runtime):
 
 ## Evaluation
 
-Entity-level metrics computed with **seqeval** (strict IOB2 matching):
+Metrics on the held-out test set (2,009 sentences), computed with **seqeval**:
 
 | Metric | Value |
 |---|---|
-| Precision | _(fill in after training)_ |
-| Recall | _(fill in after training)_ |
-| F1 Score | _(fill in after training)_ |
+| Token Accuracy | **94.20%** |
+| Precision (entity-level, strict IOB2) | 0.6281 |
+| Recall (entity-level, strict IOB2) | 0.6231 |
+| F1 Score (entity-level, strict IOB2) | 0.6256 |
+
+Token accuracy measures per-token label correctness; the entity-level scores use strict matching, where an entity counts as correct only if its full span and type match exactly — a substantially harder criterion, on which published models fine-tuned on the CyNER data report comparable results.
+
+Strongest entity types: EXPLOIT (F1 0.84), HASH (0.77), IP (0.76), VULNERABILITY (0.72), APT (0.71). Weakest: CAMPAIGN (0.18, only 40 test instances), METHOD (0.29) — low-support and semantically diffuse classes.
 
 - The notebook reports test-set Precision/Recall/F1 plus a per-entity classification report.
-- Locally, run `python scripts/evaluate_ner.py` — it re-derives the same held-out test split, evaluates `models/secbert_ner_final`, and writes `evaluation_results.json`.
+- Locally, run `python scripts/evaluate_ner.py` — it re-derives the same held-out test split, evaluates `models/secbert_ner_final`, and writes `evaluation_results.json` (full per-entity breakdown).
 
 ---
 

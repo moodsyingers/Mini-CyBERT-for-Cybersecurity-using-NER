@@ -39,7 +39,7 @@ model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 model.eval()
 label2id = model.config.label2id
 id2label = model.config.id2label
-print("✓ Model loaded (cyber-only labels from config)")
+print("[OK] Model loaded (cyber-only labels from config)")
 print()
 
 # Load schema for tag mapping (CSV may have raw 75 tags)
@@ -67,7 +67,7 @@ grouped = df.groupby("Sentence_ID").agg({
     "Tag": list
 }).reset_index()
 
-print(f"✓ Loaded {len(grouped)} sentences from {os.path.basename(CSV_PATH)}")
+print(f"[OK] Loaded {len(grouped)} sentences from {os.path.basename(CSV_PATH)}")
 print()
 
 # Convert tags to IDs using model's label2id
@@ -89,8 +89,9 @@ print()
 def tokenize_and_align_labels_with_offsets(examples):
     """Tokenize with offset mapping to track word boundaries"""
     tokenized_inputs = tokenizer(
-        examples["tokens"], 
-        truncation=True, 
+        examples["tokens"],
+        truncation=True,
+        max_length=512,
         is_split_into_words=True,
         return_offsets_mapping=False  # We'll track word_ids instead
     )
@@ -120,7 +121,7 @@ tokenized_validation = validation_dataset.map(
     tokenize_and_align_labels_with_offsets, 
     batched=True
 )
-print("✓ Tokenization complete")
+print("[OK] Tokenization complete")
 print()
 
 # Run inference
@@ -152,7 +153,7 @@ for example in tokenized_validation:
     all_predictions.append(pred_labels)
     all_labels.append(true_labels)
 
-print("✓ Inference complete")
+print("[OK] Inference complete")
 print()
 
 # ============================================================================
@@ -327,7 +328,7 @@ with open(output_path, 'w') as f:
     json.dump(evaluation_results, f, indent=2)
 
 print("="*80)
-print(f"✓ Evaluation results saved to: {output_path}")
+print(f"[OK] Evaluation results saved to: {output_path}")
 print("="*80)
 print()
 
