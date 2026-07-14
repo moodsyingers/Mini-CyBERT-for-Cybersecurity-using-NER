@@ -25,6 +25,12 @@ BASE_DIR = Path(__file__).parent.parent
 NER_MODEL_PATH = BASE_DIR / "models" / "secbert_ner_final"
 VOCABULARY_PATH = BASE_DIR / "datasets" / "cyber" / "entity_vocabulary.json"
 
+# Entity types the fine-tuned model knows; vocabulary lookups outside this set are skipped
+MODEL_ENTITY_TYPES = {
+    "APT", "CAMPAIGN", "EXPLOIT", "FILE", "HASH", "INDICATOR", "INFRASTRUCTURE",
+    "IP", "MALWARE", "METHOD", "SOFTWARE", "THREAT_ACTOR", "TOOL", "URL", "VULNERABILITY",
+}
+
 # Model max length (BERT limit)
 NER_MAX_LENGTH = 512
 # Sliding window stride when a segment exceeds NER_MAX_LENGTH tokens
@@ -223,7 +229,9 @@ def enhance_with_keywords(text, existing_entities):
     multi_word = dataset_vocabulary.get('multi_word', {})
     for entity_phrase, entity_data in multi_word.items():
         entity_type = entity_data['entity_type']
-        
+        if entity_type not in MODEL_ENTITY_TYPES:
+            continue
+
         # Search for phrase (case insensitive, word boundary)
         pattern = re.compile(r'\b' + re.escape(entity_phrase) + r'\b', re.IGNORECASE)
         
@@ -285,7 +293,9 @@ def enhance_with_keywords(text, existing_entities):
         if word_lower in single_words:
             entity_data = single_words[word_lower]
             entity_type = entity_data['entity_type']
-            
+            if entity_type not in MODEL_ENTITY_TYPES:
+                continue
+
             # Check if this span overlaps with existing entities
             overlaps = False
             for e_start, e_end in existing_spans:
